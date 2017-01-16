@@ -503,84 +503,86 @@ class OWBoxPlot(widget.OWWidget):
         color=self.colors
         if not color:
             return
-
-        if self.group_var:
-            nr=-1
-            group=0
+        colors=[]
+        nr=-1
+        group=0
+        self.group=[]
+        if color=="blue":
+            for i in range(len(self.dataset)+1):
+                nr+=1
+                if nr >= 7:
+                    self.group.append([0+(nr-group)*51, 0+(nr-group)*51, 210])
+                if nr==7:
+                    group=nr
+        elif color=="default" and (type(self.colors) is list):
             self.group=[]
-            if color=="blue":
-                for i in range(len(self.dataset)+1):
-                    nr+=1
-                    if nr >= 7:
-                        self.group.append([0+(nr-group)*51, 0+(nr-group)*51, 210])
-                    if nr==7:
-                        group=nr
-            elif color=="default" and (type(self.colors) is list):
-                self.group=[]
-            elif color=="default" and (type(self.colors) is not list):
-                OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
-                OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
-                OWBoxPlot._pen_median = QPen(QBrush(QColor(0xff, 0xff, 0x00)), 2)
-                OWBoxPlot._pen_paramet = QPen(QBrush(QColor(0x33, 0x00, 0xff)), 2)
-                OWBoxPlot._pen_dotted = QPen(QBrush(QColor(0x33, 0x00, 0xff)), 1)
-                OWBoxPlot._post_line_pen = QPen(Qt.lightGray, 2)
-                OWBoxPlot._post_grp_pen = QPen(Qt.lightGray, 4)
-                OWBoxPlot._box_brush = QBrush(QColor(0x33, 0x88, 0xff, 0xc0))
+        elif color=="default" and (type(self.colors) is not list):
+            OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
+            OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
+            OWBoxPlot._pen_median = QPen(QBrush(QColor(0xff, 0xff, 0x00)), 2)
+            OWBoxPlot._pen_paramet = QPen(QBrush(QColor(0x33, 0x00, 0xff)), 2)
+            OWBoxPlot._pen_dotted = QPen(QBrush(QColor(0x33, 0x00, 0xff)), 1)
+            OWBoxPlot._post_line_pen = QPen(Qt.lightGray, 2)
+            OWBoxPlot._post_grp_pen = QPen(Qt.lightGray, 4)
+            OWBoxPlot._box_brush = QBrush(QColor(0x33, 0x88, 0xff, 0xc0))
 
-                OWBoxPlot._attr_brush = QBrush(QColor(0x33, 0x00, 0xff))
-                self.group=[]
-            elif color=="red":
-                for i in range(len(self.dataset)+1):
-                    nr+=1
-                    if nr >= 7:
-                        self.group.append([0 +(nr-group) * 50, 0 , 0])
-                    if nr == 7:
-                        group = nr
-            elif color=="yellow":
-                for i in range(len(self.dataset)+1):
-                    nr+=1
-                    if nr >= 7:
-                        self.group.append([0+(nr-group)*51, 0+(nr-group)*51, 0])
-                    if nr==7:
-                        group=nr
-            elif color=="grey":
+            OWBoxPlot._attr_brush = QBrush(QColor(0x33, 0x00, 0xff))
+            self.group=[]
+        elif color=="red":
+            for i in range(len(self.dataset)+1):
+                nr+=1
+                if nr >= 7:
+                    self.group.append([0 +(nr-group) * 50, 0 , 0])
+                if nr == 7:
+                    group = nr
+        elif color=="yellow":
+            for i in range(len(self.dataset)+1):
+                nr+=1
+                if nr >= 7:
+                    self.group.append([0+(nr-group)*51, 0+(nr-group)*51, 0])
+                if nr==7:
+                    group=nr
+        elif color=="grey":
+            print("grey")
 
-                for i in range(len(self.dataset)+1):
-                    nr+=1
-                    if nr >= 7:
-                        self.group.append([0+(nr-group)*40, 0+(nr-group)*40, 0+(nr-group)*40])
-                    if nr==7:
-                        group=nr
-            elif color=="rainbow":
-                rainbow=[[148, 0, 211],[75, 0, 130], [0, 0, 255], [0, 255, 0], [255, 255, 0], [255, 127, 0], [255, 0 , 0]]
-                for i in range(len(self.dataset)+1):
-                    nr+=1
-                    if nr>=len(rainbow):
-                        group=nr
-                    if nr<len(rainbow):
-                        self.group.append(rainbow[nr-group])
+            for i in range(len(self.dataset)):
+                nr+=1
+                if nr >= 7:
+                    self.group.append([1+(nr-group)*40, 1+(nr-group)*40, 1+(nr-group)*40])
+                if nr==7:
+                    group=nr
+            print(self.group)
+        elif color=="rainbow":
+            rainbow=[[148, 0, 211],[75, 0, 130], [0, 0, 255], [0, 255, 0], [255, 255, 0], [255, 127, 0], [255, 0 , 0]]
+            for i in range(len(self.dataset)+1):
+                nr+=1
+                if nr>=len(rainbow):
+                    group=nr
+                if nr<len(rainbow):
+                    self.group.append(rainbow[nr-group])
 
-            if self.group != []:
-                self.choose_rgb(0)
-                OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
-                OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
-                color=self.choose_rgb(4)
-                OWBoxPlot._pen_median = QPen(
-                    QBrush(QColor(color[0], color[1], color[2])), 2)
-                color = self.choose_rgb(3)
-                OWBoxPlot._pen_paramet = QPen(
-                    QBrush(QColor(color[0], color[1], color[2])), 2)
-                color=self.choose_rgb(2)
-                OWBoxPlot._pen_dotted = QPen(
-                    QBrush(QColor(color[0], color[1], color[2])), 1)
-                OWBoxPlot._post_line_pen = QPen(Qt.lightGray, 2)
-                OWBoxPlot._post_grp_pen = QPen(Qt.lightGray, 4)
-                color = self.choose_rgb(1)
-                OWBoxPlot._box_brush = QBrush(
-                    QColor(color[0], color[1], color[2]))
-                color = self.choose_rgb(1)
-                OWBoxPlot._attr_brush = QBrush(
-                    QColor(color[0], color[1], color[2]))
+        if self.group != []:
+            self.choose_rgb(0)
+            OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
+            OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
+            color=self.choose_rgb(4)
+            OWBoxPlot._pen_median = QPen(
+                QBrush(QColor(color[0], color[1], color[2])), 2)
+            color = self.choose_rgb(3)
+            OWBoxPlot._pen_paramet = QPen(
+                QBrush(QColor(color[0], color[1], color[2])), 2)
+            color=self.choose_rgb(2)
+            OWBoxPlot._pen_dotted = QPen(
+                QBrush(QColor(color[0], color[1], color[2])), 1)
+            OWBoxPlot._post_line_pen = QPen(Qt.lightGray, 2)
+            OWBoxPlot._post_grp_pen = QPen(Qt.lightGray, 4)
+            color = self.choose_rgb(1)
+            OWBoxPlot._box_brush = QBrush(
+                QColor(color[0], color[1], color[2]))
+            color = self.choose_rgb(1)
+            OWBoxPlot._attr_brush = QBrush(
+                QColor(color[0], color[1], color[2]))
+            self.group = []
 
 
 
