@@ -582,7 +582,6 @@ class OWBoxPlot(widget.OWWidget):
             color = self.choose_rgb(1)
             OWBoxPlot._attr_brush = QBrush(
                 QColor(color[0], color[1], color[2]))
-            self.group = []
 
 
 
@@ -634,6 +633,8 @@ class OWBoxPlot(widget.OWWidget):
         self.attr_labels = []
         self.labels = []
         self.boxes = []
+        self.colors=VariableListModel()
+
         self.mean_labels = []
         self.posthoc_lines = []
         self.openContext(self.dataset)
