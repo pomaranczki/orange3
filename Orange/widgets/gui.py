@@ -875,6 +875,76 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
     miscellanea(ledit, b, widget, **misc)
     return ledit
 
+def lineSearch(widget, master, value, label=None, labelWidth=None,
+             orientation=Qt.Vertical, box=None, callback=None,
+             valueType=str, controlWidth=None,
+             callbackOnType=False, focusInCallback=None, **misc):
+    """
+    Insert a line edit.
+
+    :param widget: the widget into which the box is inserted
+    :type widget: QWidget or None
+    :param master: master widget
+    :type master: OWWidget or OWComponent
+    :param value: the master's attribute with which the value is synchronized
+    :type value:  str
+    :param label: label
+    :type label: str
+    :param labelWidth: the width of the label
+    :type labelWidth: int
+    :param orientation: tells whether to put the label above or to the left
+    :type orientation: `Qt.Vertical` (default) or `Qt.Horizontal`
+    :param box: tells whether the widget has a border, and its label
+    :type box: int or str or None
+    :param callback: a function that is called when the check box state is
+        changed
+    :type callback: function
+    :param valueType: the type into which the entered string is converted
+        when synchronizing to `value`
+    :type valueType: type
+    :param validator: the validator for the input
+    :type validator: QValidator
+    :param controlWidth: the width of the line edit
+    :type controlWidth: int
+    :param callbackOnType: if set to `True`, the callback is called at each
+        key press (default: `False`)
+    :type callbackOnType: bool
+    :param focusInCallback: a function that is called when the line edit
+        receives focus
+    :type focusInCallback: function
+    :rtype: QLineEdit or a box
+    """
+    if box or label:
+        b = widgetBox(widget, box, orientation, addToLayout=False)
+        if label is not None:
+            widgetLabel(b, label, labelWidth)
+    else:
+        b = widget
+
+    baseClass = misc.pop("baseClass", None)
+    if baseClass:
+        ledit = baseClass(b)
+        if b is not widget:
+            b.layout().addWidget(ledit)
+    elif focusInCallback or callback and not callbackOnType:
+        ledit = LineEditWFocusOut(b, callback, focusInCallback)
+    else:
+        ledit = QtWidgets.QLineEdit(b)
+        if b is not widget:
+            b.layout().addWidget(ledit)
+
+    if value:
+        ledit.setText(str(getdeepattr(master, value)))
+    if controlWidth:
+        ledit.setFixedWidth(controlWidth)
+    if value:
+        ledit.cback = connectControl(
+            master, value,
+            callbackOnType and callback, ledit.textChanged[str],
+            CallFrontLineEdit(ledit), fvcb=value and valueType)[1]
+    miscellanea(ledit, b, widget, **misc)
+    return ledit
+
 
 def button(widget, master, label, callback=None, width=None, height=None,
            toggleButton=False, value="", default=False, autoDefault=True,
@@ -2238,6 +2308,7 @@ class FunctionCallback:
                     func(**kwds)
             else:
                 self.func(**kwds)
+
 
 
 class CallBackListView(ControlledCallback):
