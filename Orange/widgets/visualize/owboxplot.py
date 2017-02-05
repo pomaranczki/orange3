@@ -12,7 +12,6 @@ from AnyQt.QtWidgets import (
 )
 from AnyQt.QtGui import QPen, QColor, QBrush, QPainterPath, QPainter, QFont
 from AnyQt.QtCore import Qt, QEvent, QRectF, QSize
-from PyQt4 import QtGui, QtCore
 
 
 import scipy.special
@@ -61,7 +60,7 @@ class BoxData:
         self.var = float(np.sum(dist[1] * (dist[0] - self.mean) ** 2) / n)
         self.dev = math.sqrt(self.var)
         self.places=[]
-        self.result=None
+        self.variables_search_result=None
         s = 0
         thresholds = [n / 4, n / 2, n / 4 * 3]
         thresh_i = 0
@@ -178,7 +177,7 @@ class OWBoxPlot(widget.OWWidget):
         self.stats = []
         self.dataset = None
         self.posthoc_lines = []
-        self.search=""
+        self.variable_search_text=""
 
 
         self.label_txts = self.mean_labels = self.boxes = self.labels = \
@@ -186,17 +185,17 @@ class OWBoxPlot(widget.OWWidget):
         self.p = -1.0
         self.scale_x = self.scene_min_x = self.scene_width = 0
         self.label_width = 0
-        self.result=None
+        self.variables_search_result=None
         self.colors=VariableListModel()
-        self.group=[]
+        self.colors_group=[]
         self.color_check=None
         self.attrs = VariableListModel()
 
 
 
-        gui.lineSearch(self.controlArea, self, value="search",
+        gui.lineSearch(self.controlArea, self, value="variable_search_text",
                      label="Search Variable:", orientation=Qt.Horizontal,
-                     callback=self.initUI)
+                     callback=self.find_variables)
 
         view = gui.listView(
             self.controlArea, self, "attribute", box="Variable",
@@ -223,7 +222,7 @@ class OWBoxPlot(widget.OWWidget):
 
         view3 = gui.listView(
             self.controlArea, self, "colors", box="Colors",
-            model=self.colors, callback=self.attr_color)
+            model=self.colors, callback=self.color_attr_changed)
         view3.setMinimumSize(QSize(30, 30))
         # Any other policy than Ignored will let the QListBox's scrollbar
         # set the minimal height (see the penultimate paragraph of
@@ -270,49 +269,38 @@ class OWBoxPlot(widget.OWWidget):
 
         self.update_display_box()
 
-    def initUI(self):
-        qle = QtGui.QLineEdit(self)
-        # aby tekst był pod
-        # heja
 
-        self.search=self.search
-        if self.search!="":
-            #wywolanie danychz nowym search
-            self.find(self.dataset)
+    def find_variables(self):
+        regex = r".*"+ self.variable_search_text +".*"
 
-    def find(self,tekst):
-        regex = r".*"+ self.search +".*"
+        text = str(self.dataset.domain).split(",")
+        text[0] = text[0][1:]
+        new = text[-1].split("|")
 
-
-        tekst=str(tekst.domain).split(",")
-        tekst[0]=tekst[0][1:]
-        new=tekst[-1].split("|")
-
-        tekst[-1]=new[0]
-        tekst.append(new[1][:-1])
-        self.result=[]
-        pomoc=[]
-        naglowek=""
-        for i in range(len(tekst)):
-
-            person = re.findall(regex, tekst[i].strip())
-            if person!=[]:
-                pomoc.append(person[0])
-                self.result.append(i)
-        nr=0
-        for i in pomoc:
-            if nr==0:
-                naglowek = "['"+i+"',"
-            if nr>0:
-                if len(self.result)==nr+2:
-                    naglowek+="'"+i+"' | "
-                elif len(self.result) == nr+1:
-                    naglowek += "'" + i + "']"
+        text[-1] = new[0]
+        text.append(new[1][:-1])
+        self.variables_search_result=[]
+        _help = []
+        for i in range(len(text)):
+            person = re.findall(regex, text[i].strip())
+            if person != []:
+                _help.append(person[0])
+                self.variables_search_result.append(i)
+        nr = 0
+        header = ""
+        for i in _help:
+            if nr == 0:
+                header = "['" + i + "',"
+            if nr > 0:
+                if len(self.variables_search_result) == nr+2:
+                    header += "'" + i + "' | "
+                elif len(self.variables_search_result) == nr+1:
+                    header += "'" + i + "']"
                 else:
-                    naglowek+="'"+i+"',"
+                    header += "'" + i + "',"
             nr+=1
 
-        self.set_data(self.dataset, self.result)
+        self.set_data(self.dataset, self.variables_search_result)
 
     def sizeHint(self):
         return QSize(100, 500)  # Vertical size is regulated by mainArea
@@ -355,7 +343,6 @@ class OWBoxPlot(widget.OWWidget):
                 self.attrs[:] = chain(domain.variables,
                                   (a for a in domain.metas if a.is_primitive()))
             if self.attrs:
-
                 self.attribute = self.attrs[0]
             try:
                 self.colors[:] = chain(["default", "blue", "red", "yellow", "rainbow", "grey"])
@@ -416,9 +403,9 @@ class OWBoxPlot(widget.OWWidget):
                     include_class=True, include_metas=True) else None
             self.attrs.sort(key=compute_score)
         else:
-            if self.result:
+            if self.variables_search_result:
                 helper=""
-                for i in self.result:
+                for i in self.variables_search_result:
                     if helper=="":
                         helper=domain.variables[i:i+1]
                     else:
@@ -437,7 +424,7 @@ class OWBoxPlot(widget.OWWidget):
         self.infot1.setText("")
         self.attrs[:] = []
         self.group_vars[:] = []
-        self.result=None
+        self.variables_search_result=None
         self.is_continuous = False
         self.update_display_box()
 
@@ -467,16 +454,10 @@ class OWBoxPlot(widget.OWWidget):
                                    -30 - len(self.boxes) * 40 / 2 + 45)
 
 
+    def color_attr_changed(self):
+        self.compute_box_data_color()
 
-    def attr_color(self):
-         self.compute_box_data_color()
-         self.layout_changed_color()
-         self.update_display_box()
-
-
-    def layout_changed_color(self):
-        attr = self.attribute
-        if not attr:
+        if not self.attribute:
             return
         self.clear_scene()
         if self.dataset is None or len(self.conts) == len(self.dist) == 0:
@@ -485,38 +466,29 @@ class OWBoxPlot(widget.OWWidget):
         if not self.is_continuous:
             return self.display_changed_disc()
 
-        self.mean_labels = [self.mean_label(stat, attr, lab)
+        self.mean_labels = [self.mean_label(stat, self.attribute, lab)
                             for stat, lab in zip(self.stats, self.label_txts)]
         self.draw_axis()
         self.boxes = [self.box_group(stat) for stat in self.stats]
-        self.labels = [self.label_group(stat, attr, mean_lab)
+        self.labels = [self.label_group(stat, self.attribute, mean_lab)
                        for stat, mean_lab in zip(self.stats, self.mean_labels)]
         self.attr_labels = [QGraphicsSimpleTextItem(lab)
                             for lab in self.label_txts]
-        for it in chain(self.labels, self.attr_labels):
-            self.box_scene.addItem(it)
+        for i in chain(self.labels, self.attr_labels):
+            self.box_scene.addItem(i)
         self.display_changed()
 
+        self.update_display_box()
 
 
     def compute_box_data_color(self):
-        color=self.colors
-        if not color:
+        if not self.colors:
             return
-        colors=[]
-        nr=-1
-        group=0
-        self.group=[]
-        if color=="blue":
-            for i in range(len(self.dataset)+1):
-                nr+=1
-                if nr >= 7:
-                    self.group.append([0+(nr-group)*51, 0+(nr-group)*51, 210])
-                if nr==7:
-                    group=nr
-        elif color=="default" and (type(self.colors) is list):
-            self.group=[]
-        elif color=="default" and (type(self.colors) is not list):
+        colors = []
+        nr = -1
+        group = 0
+        self.colors_group = []
+        if self.colors == "default":
             OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
             OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
             OWBoxPlot._pen_median = QPen(QBrush(QColor(0xff, 0xff, 0x00)), 2)
@@ -527,65 +499,60 @@ class OWBoxPlot(widget.OWWidget):
             OWBoxPlot._box_brush = QBrush(QColor(0x33, 0x88, 0xff, 0xc0))
 
             OWBoxPlot._attr_brush = QBrush(QColor(0x33, 0x00, 0xff))
-            self.group=[]
-        elif color=="red":
+            self.colors_group=[]
+        elif self.colors == "blue":
             for i in range(len(self.dataset)+1):
-                nr+=1
+                nr += 1
                 if nr >= 7:
-                    self.group.append([0 +(nr-group) * 50, 0 , 0])
+                    self.colors_group.append([0+(nr-group)*51, 0+(nr-group)*51, 210])
+                if nr == 7:
+                    group=nr
+        elif self.colors == "red":
+            for i in range(len(self.dataset)+1):
+                nr += 1
+                if nr >= 7:
+                    self.colors_group.append([0 +(nr-group) * 50, 0 , 0])
                 if nr == 7:
                     group = nr
-        elif color=="yellow":
+        elif self.colors == "yellow":
             for i in range(len(self.dataset)+1):
-                nr+=1
+                nr += 1
                 if nr >= 7:
-                    self.group.append([0+(nr-group)*51, 0+(nr-group)*51, 0])
-                if nr==7:
-                    group=nr
-        elif color=="grey":
-            print("grey")
-
+                    self.colors_group.append([0+(nr-group)*51, 0+(nr-group)*51, 0])
+                if nr == 7:
+                    group = nr
+        elif self.colors == "grey":
             for i in range(len(self.dataset)):
-                nr+=1
+                nr += 1
                 if nr >= 7:
-                    self.group.append([1+(nr-group)*40, 1+(nr-group)*40, 1+(nr-group)*40])
-                if nr==7:
-                    group=nr
-            print(self.group)
-        elif color=="rainbow":
+                    self.colors_group.append([1+(nr-group)*40, 1+(nr-group)*40, 1+(nr-group)*40])
+                if nr == 7:
+                    group = nr
+        elif self.colors == "rainbow":
             rainbow=[[148, 0, 211],[75, 0, 130], [0, 0, 255], [0, 255, 0], [255, 255, 0], [255, 127, 0], [255, 0 , 0]]
             for i in range(len(self.dataset)+1):
                 nr+=1
                 if nr>=len(rainbow):
                     group=nr
                 if nr<len(rainbow):
-                    self.group.append(rainbow[nr-group])
+                    self.colors_group.append(rainbow[nr-group])
 
-        if self.group != []:
+        if self.colors_group != []:
             self.choose_rgb(0)
             OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
             OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
-            color=self.choose_rgb(4)
-            OWBoxPlot._pen_median = QPen(
-                QBrush(QColor(color[0], color[1], color[2])), 2)
-            color = self.choose_rgb(3)
-            OWBoxPlot._pen_paramet = QPen(
-                QBrush(QColor(color[0], color[1], color[2])), 2)
-            color=self.choose_rgb(2)
-            OWBoxPlot._pen_dotted = QPen(
-                QBrush(QColor(color[0], color[1], color[2])), 1)
+            colors = self.choose_rgb(4)
+            OWBoxPlot._pen_median = QPen(QBrush(QColor(colors[:3])), 2)
+            colors = self.choose_rgb(3)
+            OWBoxPlot._pen_paramet = QPen(QBrush(QColor(colors[:3])), 2)
+            colors = self.choose_rgb(2)
+            OWBoxPlot._pen_dotted = QPen(QBrush(QColor(colors[:3])), 1)
             OWBoxPlot._post_line_pen = QPen(Qt.lightGray, 2)
             OWBoxPlot._post_grp_pen = QPen(Qt.lightGray, 4)
-            color = self.choose_rgb(1)
-            OWBoxPlot._box_brush = QBrush(
-                QColor(color[0], color[1], color[2]))
-            color = self.choose_rgb(1)
-            OWBoxPlot._attr_brush = QBrush(
-                QColor(color[0], color[1], color[2]))
-
-
-
-
+            colors = self.choose_rgb(1)
+            OWBoxPlot._box_brush = QBrush(QColor(colors[:3]))
+            colors = self.choose_rgb(1)
+            OWBoxPlot._attr_brush = QBrush(QColor(colors[:3]))
 
 
     def compute_box_data(self):
@@ -1072,8 +1039,8 @@ class OWBoxPlot(widget.OWWidget):
         return box
 
     def choose_rgb(self, i):
-        choos = self.group[i]
-        return choos[0], choos[1], choos[2]
+        return self.colors_group[i][:3]
+
     def strudel(self, dist, group_val_index=None):
         attr = self.attribute
         ss = np.sum(dist)
@@ -1094,9 +1061,9 @@ class OWBoxPlot(widget.OWWidget):
             if group_val_index is not None:
                 cond.append(FilterDiscrete(self.group_var, [group_val_index]))
             rect = FilterGraphicsRectItem(cond, cum + 1, -6, v - 2, 12)
-            if self.group!=[]:
+            if self.colors_group!=[]:
                 color=self.choose_rgb(i)
-                rect.setBrush(QBrush(QColor(color[0], color[1], color[2])))
+                rect.setBrush(QBrush(QColor(color[:3])))
             else:
                 rect.setBrush(QBrush(QColor(*attr.colors[i])))
             rect.setPen(QPen(Qt.NoPen))
