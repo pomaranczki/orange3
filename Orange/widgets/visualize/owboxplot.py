@@ -1063,7 +1063,7 @@ class OWBoxPlot(widget.OWWidget):
             rect = FilterGraphicsRectItem(cond, cum + 1, -6, v - 2, 12)
             if self.colors_group!=[]:
                 color=self.choose_rgb(i)
-                rect.setBrush(QBrush(QColor(color[:3])))
+                rect.setBrush(QBrush(QColor(*color[:3])))
             else:
                 rect.setBrush(QBrush(QColor(*attr.colors[i])))
             rect.setPen(QPen(Qt.NoPen))
