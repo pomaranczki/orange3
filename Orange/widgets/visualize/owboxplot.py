@@ -96,20 +96,26 @@ class FilterGraphicsRectItem(QGraphicsRectItem):
 class OWBoxPlot(widget.OWWidget):
     """
     Here's how the widget's functions call each other:
+
     - `set_data` is a signal handler fills the list boxes and calls
     `grouping_changed`.
+
     - `grouping_changed` handles changes of grouping attribute: it enables or
     disables the box for ordering, orders attributes and calls `attr_changed`.
+
     - `attr_changed` handles changes of attribute. It recomputes box data by
     calling `compute_box_data`, shows the appropriate display box
     (discrete/continuous) and then calls`layout_changed`
+
     - `layout_changed` constructs all the elements for the scene (as lists of
     QGraphicsItemGroup) and calls `display_changed`. It is called when the
     attribute or grouping is changed (by attr_changed) and on resize event.
+
     - `display_changed` puts the elements corresponding to the current display
     settings on the scene. It is called when the elements are reconstructed
     (layout is changed due to selection of attributes or resize event), or
     when the user changes display settings or colors.
+
     For discrete attributes, the flow is a bit simpler: the elements are not
     constructed in advance (by layout_changed). Instead, layout_changed and
     display_changed call display_changed_disc that draws everything.
