@@ -225,7 +225,7 @@ class OWBoxPlot(widget.OWWidget):
 
 
         view3 = gui.listView(
-            self.controlArea, self, "colors", box="Colors",
+            self.controlArea, self, "color", box="Colors",
             model=self.colors, callback=self.color_attr_changed)
         view3.setMinimumSize(QSize(30, 30))
         # Any other policy than Ignored will let the QListBox's scrollbar
@@ -497,9 +497,8 @@ class OWBoxPlot(widget.OWWidget):
 
 
     def compute_box_data_color(self):
-        if not self.colors:
+        if not self.color:
             return
-        colors = []
         nr = -1
         group = 0
         self.colors_group = []
@@ -515,35 +514,35 @@ class OWBoxPlot(widget.OWWidget):
 
             OWBoxPlot._attr_brush = QBrush(QColor(0x33, 0x00, 0xff))
             self.colors_group=[]
-        elif self.colors == "blue":
+        elif self.color == "blue":
             for i in range(len(self.dataset)+1):
                 nr += 1
                 if nr >= 7:
                     self.colors_group.append([0+(nr-group)*51, 0+(nr-group)*51, 210])
                 if nr == 7:
                     group=nr
-        elif self.colors == "red":
+        elif self.color == "red":
             for i in range(len(self.dataset)+1):
                 nr += 1
                 if nr >= 7:
                     self.colors_group.append([0 +(nr-group) * 50, 0 , 0])
                 if nr == 7:
                     group = nr
-        elif self.colors == "yellow":
+        elif self.color == "yellow":
             for i in range(len(self.dataset)+1):
                 nr += 1
                 if nr >= 7:
                     self.colors_group.append([0+(nr-group)*51, 0+(nr-group)*51, 0])
                 if nr == 7:
                     group = nr
-        elif self.colors == "grey":
+        elif self.color == "grey":
             for i in range(len(self.dataset)):
                 nr += 1
                 if nr >= 7:
                     self.colors_group.append([1+(nr-group)*40, 1+(nr-group)*40, 1+(nr-group)*40])
                 if nr == 7:
                     group = nr
-        elif self.colors == "rainbow":
+        elif self.color == "rainbow":
             rainbow=[[148, 0, 211],[75, 0, 130], [0, 0, 255], [0, 255, 0], [255, 255, 0], [255, 127, 0], [255, 0 , 0]]
             for i in range(len(self.dataset)+1):
                 nr+=1
