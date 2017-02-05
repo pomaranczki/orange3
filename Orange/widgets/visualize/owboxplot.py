@@ -542,17 +542,17 @@ class OWBoxPlot(widget.OWWidget):
             OWBoxPlot._pen_axis_tick = QPen(Qt.white, 5)
             OWBoxPlot._pen_axis = QPen(Qt.darkGray, 3)
             colors = self.choose_rgb(4)
-            OWBoxPlot._pen_median = QPen(QBrush(QColor(colors[:3])), 2)
+            OWBoxPlot._pen_median = QPen(QBrush(QColor(*colors[:3])), 2)
             colors = self.choose_rgb(3)
-            OWBoxPlot._pen_paramet = QPen(QBrush(QColor(colors[:3])), 2)
+            OWBoxPlot._pen_paramet = QPen(QBrush(QColor(*colors[:3])), 2)
             colors = self.choose_rgb(2)
-            OWBoxPlot._pen_dotted = QPen(QBrush(QColor(colors[:3])), 1)
+            OWBoxPlot._pen_dotted = QPen(QBrush(QColor(*colors[:3])), 1)
             OWBoxPlot._post_line_pen = QPen(Qt.lightGray, 2)
             OWBoxPlot._post_grp_pen = QPen(Qt.lightGray, 4)
             colors = self.choose_rgb(1)
-            OWBoxPlot._box_brush = QBrush(QColor(colors[:3]))
+            OWBoxPlot._box_brush = QBrush(QColor(*colors[:3]))
             colors = self.choose_rgb(1)
-            OWBoxPlot._attr_brush = QBrush(QColor(colors[:3]))
+            OWBoxPlot._attr_brush = QBrush(QColor(*colors[:3]))
 
 
     def compute_box_data(self):
