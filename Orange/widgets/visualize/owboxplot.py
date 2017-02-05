@@ -137,6 +137,7 @@ class OWBoxPlot(widget.OWWidget):
     order_by_importance = Setting(False)
     group_var = ContextSetting(None)
     show_annotations = Setting(True)
+    manually_set_axes = 0
     compare = Setting(CompareMeans)
     stattest = Setting(0)
     sig_threshold = Setting(0.05)
@@ -190,6 +191,8 @@ class OWBoxPlot(widget.OWWidget):
         self.colors_group=[]
         self.color_check=None
         self.attrs = VariableListModel()
+        self.scale_min='0'
+        self.scale_max='1'
 
 
 
@@ -202,7 +205,8 @@ class OWBoxPlot(widget.OWWidget):
             model=self.attrs, callback=self.attr_changed)
         # Any other policy than Ignored will let the QListBox's scrollbar
         # set the minimal height (see the penultimate paragraph of
-        # http://doc.qt.io/qt-4.8/qabstractscrollarea.html#addScrollBarWidget)
+        # http://doc.qt.io/qt-4.8/qabstractscrollarea.html#addScrollBarWidget
+        view.setMinimumSize(QSize(30, 30))
         view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         self.cb_order = gui.checkBox(
             view.box, self, "order_by_importance",
@@ -248,6 +252,17 @@ class OWBoxPlot(widget.OWWidget):
             callback=self.display_changed,
             sizePolicy=(QSizePolicy.Minimum, QSizePolicy.Maximum)).box
 
+        gui.checkBox(
+            gui.indentedBox(self.controlArea, sep=1),
+            self, "manually_set_axes", "Set axes range manually",
+            callback=self.axes_setting_changed)
+
+        self.manually_set_axes_min = gui.lineEdit(self.controlArea, self,
+            'scale_min', label='min', callback=self.axes_setting_changed)
+        self.manually_set_axes_max = gui.lineEdit(self.controlArea, self,
+            'scale_max', label='max', callback=self.axes_setting_changed)
+        self.manually_set_axes_min.setDisabled(True)
+        self.manually_set_axes_max.setDisabled(True)
 
         gui.vBox(self.mainArea, addSpace=True)
         self.box_scene = QGraphicsScene()
@@ -835,6 +850,18 @@ class OWBoxPlot(widget.OWWidget):
             label.min_x = -w2
 
         return label
+
+    def axes_setting_changed(self):
+        self.layout_changed()
+        if self.manually_set_axes:
+            self.manually_set_axes_min.setDisabled(False)
+            self.manually_set_axes_max.setDisabled(False)
+        else:
+            self.manually_set_axes_min.setDisabled(True)
+            self.manually_set_axes_max.setDisabled(True)
+
+
+
     def draw_axis(self):
         """Draw the horizontal axis and sets self.scale_x"""
         misssing_stats = not self.stats
@@ -842,6 +869,16 @@ class OWBoxPlot(widget.OWWidget):
         mean_labels = self.mean_labels or [self.mean_label(stats[0], self.attribute, "")]
         bottom = min(stat.a_min for stat in stats)
         top = max(stat.a_max for stat in stats)
+        if self.manually_set_axes:
+            try:
+                bottom = float(self.scale_min)
+            except:
+                bottom = 0
+            try:
+                top = float(self.scale_max)
+            except:
+                top = 0
+            if top <= bottom: top = bottom + 1
 
         first_val, step = compute_scale(bottom, top)
         while bottom <= first_val:
@@ -850,8 +887,12 @@ class OWBoxPlot(widget.OWWidget):
         no_ticks = math.ceil((top - first_val) / step) + 1
         top = max(top, first_val + no_ticks * step)
 
-        gbottom = min(bottom, min(stat.mean - stat.dev for stat in stats))
-        gtop = max(top, max(stat.mean + stat.dev for stat in stats))
+        if self.manually_set_axes:
+            gbottom = bottom
+            gtop = top
+        else:
+            gbottom = min(bottom, min(stat.mean - stat.dev for stat in stats))
+            gtop = max(top, max(stat.mean + stat.dev for stat in stats))
 
         bv = self.box_view
         viewrect = bv.viewport().rect().adjusted(15, 15, -15, -30)
@@ -861,7 +902,7 @@ class OWBoxPlot(widget.OWWidget):
         # scaling is too conservative. (No chance am I doing this.)
         mlb = min(stat.mean + mean_lab.min_x / scale_x
                   for stat, mean_lab in zip(stats, mean_labels))
-        if mlb < gbottom:
+        if mlb < gbottom and not self.manually_set_axes:
             gbottom = mlb
             self.scale_x = scale_x = viewrect.width() / (gtop - gbottom)
 
@@ -901,7 +942,12 @@ class OWBoxPlot(widget.OWWidget):
             if max_box == 0:
                 self.scale_x = 1
                 return
-            _, step = compute_scale(0, max_box)
+            if self.manually_set_axes:
+                min_ = int(self.scale_min)
+                max_ = int(self.scale_max)
+                _, step = compute_scale(min_, max_)
+            else:
+                _, step = compute_scale(0, max_box)
             step = int(step) if step > 1 else 1
             steps = int(math.ceil(max_box / step))
         max_box = step * steps
