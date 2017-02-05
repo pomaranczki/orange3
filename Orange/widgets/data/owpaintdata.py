@@ -583,6 +583,7 @@ class ClearTool(DataTool):
     only2d = False
 
     def activate(self):
+        self.editingStarted.emit()
         self.issueCommand.emit(SelectRegion(self._plot.rect()))
         self.issueCommand.emit(DeleteSelection())
         self.editingFinished.emit()
@@ -775,7 +776,7 @@ class OWPaintData(OWWidget):
 
     brushRadius = Setting(75)
     density = Setting(7)
-
+    #: current data array (shape=(N, 3)) as presented on the output
     data = Setting(None, schema_only=True)
 
     graph_name = "plot"
@@ -793,11 +794,15 @@ class OWPaintData(OWWidget):
 
         self.input_data = None
         self.input_classes = []
+        self.input_colors = None
         self.input_has_attr2 = True
         self.current_tool = None
         self._selected_indices = None
         self._scatter_item = None
-
+        #: A private data buffer (can be modified in place). `self.data` is
+        #: a copy of this array (as seen when the `invalidate` method is
+        #: called
+        self.__buffer = None
         self.labels = ["C1", "C2"]
 
         self.undo_stack = QUndoStack(self)
@@ -813,6 +818,8 @@ class OWPaintData(OWWidget):
 
         if self.data is None:
             self.data = np.zeros((0, 3))
+        self.__buffer = self.data.copy()
+
         self.colors = colorpalette.ColorPaletteGenerator(
             len(colorpalette.DefaultRGBColors))
         self.tools_cache = {}
@@ -1010,9 +1017,12 @@ class OWPaintData(OWWidget):
             if data.domain.class_vars:
                 self.Warning.continuous_target()
             self.input_classes = ["C1"]
+            self.input_colors = None
             y = np.zeros(len(data))
         else:
             self.input_classes = y.values
+            self.input_colors = y.colors
+
             y = data[:, y].Y
 
         self.input_has_attr2 = len(data.domain.attributes) >= 2
@@ -1021,6 +1031,7 @@ class OWPaintData(OWWidget):
         else:
             self.input_data = np.column_stack((X, y))
         self.reset_to_input()
+        self.unconditional_commit()
 
     def reset_to_input(self):
         """Reset the painting to input data if present."""
@@ -1029,11 +1040,22 @@ class OWPaintData(OWWidget):
         self.undo_stack.clear()
 
         index = self.selected_class_label()
+        if self.input_colors is not None:
+            colors = self.input_colors
+        else:
+            colors = colorpalette.DefaultRGBColors
+        palette = colorpalette.ColorPaletteGenerator(
+            number_of_colors=len(colors), rgb_colors=colors)
+        self.colors = palette
+        self.class_model.colors = palette
         self.class_model[:] = self.input_classes
+
         newindex = min(max(index, 0), len(self.class_model) - 1)
         itemmodels.select_row(self.classValuesView, newindex)
 
         self.data = self.input_data
+        self.__buffer = self.data.copy()
+
         prev_attr2 = self.hasAttr2
         self.hasAttr2 = self.input_has_attr2
         if prev_attr2 != self.hasAttr2:
@@ -1062,8 +1084,8 @@ class OWPaintData(OWWidget):
             return
 
         label = self.class_model[index]
-        mask = self.data[:, 2] == index
-        move_mask = self.data[~mask][:, 2] > index
+        mask = self.__buffer[:, 2] == index
+        move_mask = self.__buffer[~mask][:, 2] > index
 
         self.undo_stack.beginMacro("Delete class label")
         self.undo_stack.push(UndoCommand(DeleteIndices(mask), self))
@@ -1144,7 +1166,7 @@ class OWPaintData(OWWidget):
                 if isinstance(self.current_tool, SelectTool):
                     self.current_tool._reset()
 
-            self.data, undo = transform(command, self.data)
+            self.__buffer, undo = transform(command, self.__buffer)
             self._replot()
             return undo
         else:
@@ -1166,7 +1188,7 @@ class OWPaintData(OWWidget):
         elif isinstance(cmd, Move):
             self.undo_stack.push(UndoCommand(cmd, self, text=name))
         elif isinstance(cmd, SelectRegion):
-            indices = [i for i, (x, y) in enumerate(self.data[:, :2])
+            indices = [i for i, (x, y) in enumerate(self.__buffer[:, :2])
                        if cmd.region.contains(QPointF(x, y))]
             indices = np.array(indices, dtype=int)
             self._selected_indices = indices
@@ -1196,12 +1218,12 @@ class OWPaintData(OWWidget):
             self._add_command(Append([QPointF(*p) for p in zip(*data.T)]))
         elif isinstance(cmd, Jitter):
             point = np.array([cmd.pos.x(), cmd.pos.y()])
-            delta = - apply_jitter(self.data[:, :2], point,
+            delta = - apply_jitter(self.__buffer[:, :2], point,
                                    self.density / 100.0, 0, cmd.rstate)
             self._add_command(Move((..., slice(0, 2)), delta))
         elif isinstance(cmd, Magnet):
             point = np.array([cmd.pos.x(), cmd.pos.y()])
-            delta = - apply_attractor(self.data[:, :2], point,
+            delta = - apply_attractor(self.__buffer[:, :2], point,
                                       self.density / 100.0, 0)
             self._add_command(Move((..., slice(0, 2)), delta))
         else:
@@ -1217,16 +1239,17 @@ class OWPaintData(OWWidget):
             self.plot.removeItem(self._scatter_item)
             self._scatter_item = None
 
-        nclasses = len(self.class_model)
-        pens = [pen(self.colors[i]) for i in range(nclasses)]
+        x = self.__buffer[:, 0].copy()
+        if self.hasAttr2:
+            y = self.__buffer[:, 1].copy()
+        else:
+            y = np.zeros(self.__buffer.shape[0])
 
+        colors = self.colors[self.__buffer[:, 2]]
+        pens = [pen(c) for c in colors]
         self._scatter_item = pg.ScatterPlotItem(
-            self.data[:, 0],
-            self.data[:, 1] if self.hasAttr2 else np.zeros(self.data.shape[0]),
-            symbol="+",
-            pen=[pens[int(ci)] for ci in self.data[:, 2]]
+            x, y, symbol="+", pen=pens
         )
-
         self.plot.addItem(self._scatter_item)
 
     def _attr_name_changed(self):
@@ -1235,6 +1258,7 @@ class OWPaintData(OWWidget):
         self.invalidate()
 
     def invalidate(self):
+        self.data = self.__buffer.copy()
         self.commit()
 
     def commit(self):

@@ -66,7 +66,35 @@ class Fitter(Learner, metaclass=FitterMeta):
     def __kwargs(self, problem_type):
         learner_kwargs = set(
             self.__fits__[problem_type].__init__.__code__.co_varnames[1:])
-        return {k: v for k, v in self.kwargs.items() if k in learner_kwargs}
+        changed_kwargs = self._change_kwargs(self.kwargs, self.problem_type)
+        return {k: v for k, v in changed_kwargs.items() if k in learner_kwargs}
+
+    def _change_kwargs(self, kwargs, problem_type):
+        """Handle the kwargs to be passed to the learner before they are used.
+
+        In some cases we need to manipulate the kwargs that will be passed to
+        the learner, e.g. SGD takes a `loss` parameter in both the regression
+        and classification learners, but the learner widget cannot
+        differentiate between these two, so it passes classification and
+        regression loss parameters individually. The appropriate one must be
+        renamed into `loss` before passed to the actual learner instance. This
+        is done here.
+
+        """
+        return kwargs
+
+    @property
+    def supports_weights(self):
+        """The fitter supports weights if both the classification and
+        regression learners support weights."""
+        return (
+            hasattr(self.get_learner(self.CLASSIFICATION), 'supports_weights')
+            and self.get_learner(self.CLASSIFICATION).supports_weights) and (
+            hasattr(self.get_learner(self.REGRESSION), 'supports_weights')
+            and self.get_learner(self.REGRESSION).supports_weights)
 
     def __getattr__(self, item):
+        # Make parameters accessible on the learner for simpler testing
+        if item in self.kwargs:
+            return self.kwargs[item]
         return getattr(self.get_learner(self.problem_type), item)

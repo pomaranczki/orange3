@@ -803,8 +803,11 @@ class Table(MutableSequence, Storage):
         return "[" + ",\n ".join(str(ex) for ex in self)
 
     def __repr__(self):
-        s = "[" + ",\n ".join(repr(ex) for ex in self[:5])
-        if len(self) > 5:
+        head = 5
+        if self.is_sparse():
+            head = min(self.X.shape[0], head)
+        s = "[" + ",\n ".join(repr(ex) for ex in self[:head])
+        if len(self) > head:
             s += ",\n ..."
         s += "\n]"
         return s
@@ -1306,6 +1309,8 @@ class Table(MutableSequence, Storage):
                 m, W, Xcsc = _get_matrix(self.X, Xcsc, col)
             elif col < 0:
                 m, W, Xcsc = _get_matrix(self.metas, Xcsc, col * (-1) - 1)
+                if np.issubdtype(m.dtype, np.dtype(object)):
+                    m = m.astype(float)
             else:
                 m, W, Ycsc = _get_matrix(self._Y, Ycsc, col - self.X.shape[1])
             if var.is_discrete:

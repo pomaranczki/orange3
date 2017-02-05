@@ -106,6 +106,7 @@ class Learner(_ReprableWithPreprocessors):
 
         if isinstance(data, Instance):
             data = Table(data.domain, [data])
+        origdata = data
         data = self.preprocess(data)
 
         if len(data.domain.class_vars) > 1 and not self.supports_multiclass:
@@ -123,6 +124,7 @@ class Learner(_ReprableWithPreprocessors):
         model.supports_multiclass = self.supports_multiclass
         model.name = self.name
         model.original_domain = origdomain
+        model.original_data = origdata
         return model
 
     def preprocess(self, data):
@@ -178,7 +180,7 @@ class Model(Reprable):
     def __init__(self, domain=None):
         if isinstance(self, Learner):
             domain = None
-        elif not domain:
+        elif domain is None:
             raise ValueError("unspecified domain")
         self.domain = domain
 

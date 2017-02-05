@@ -45,9 +45,16 @@ class TestPreprocess(unittest.TestCase):
 
     def test_refuse_data_in_constructor(self):
         # We force deprecations as exceptions as part of CI
-        self.assertTrue(os.environ.get('ORANGE_DEPRECATIONS_ERROR'))
-        with self.assertRaises(OrangeDeprecationWarning):
-            Orange.preprocess.preprocess.Preprocess(Table('iris'))
+        is_CI = os.environ.get('CI') or os.environ.get('ORANGE_DEPRECATIONS_ERROR')
+        if is_CI:
+            self.assertTrue(os.environ.get('ORANGE_DEPRECATIONS_ERROR'))
+        expected = self.assertRaises if is_CI else self.assertWarns
+        with expected(OrangeDeprecationWarning):
+            try:
+                Orange.preprocess.preprocess.Preprocess(Table('iris'))
+            except NotImplementedError:
+                # Expected from default Preprocess.__call__
+                pass
 
 
 class RemoveConstant(unittest.TestCase):

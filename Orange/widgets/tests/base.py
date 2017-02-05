@@ -1,5 +1,6 @@
+import os
 import unittest
-import sip
+
 
 import numpy as np
 from AnyQt.QtWidgets import (
@@ -55,9 +56,8 @@ class WidgetTest(GuiTest):
 
     Contains helper methods widget creation and working with signals.
 
-    All widgets should be created by the create_widget method, as it
-    remembers created widgets and properly destroys them in tearDownClass
-    to avoid segmentation faults when QApplication gets destroyed.
+    All widgets should be created by the create_widget method, as this
+    will ensure they are created correctly.
     """
 
     #: list[OwWidget]
@@ -67,9 +67,8 @@ class WidgetTest(GuiTest):
     def setUpClass(cls):
         """Prepare environment for test execution
 
-        Prepare a list for tracking created widgets and construct a
-        dummy signal manager. Monkey patch OWReport.get_instance to
-        return a manually_created instance.
+        Construct a dummy signal manager and monkey patch
+        OWReport.get_instance to return a manually created instance.
         """
         super().setUpClass()
 
@@ -82,7 +81,13 @@ class WidgetTest(GuiTest):
         OWReport.get_instance = lambda: report
 
     def create_widget(self, cls, stored_settings=None, reset_default_settings=True):
-        """Create a widget instance.
+        """Create a widget instance using mock signal_manager.
+
+        When used with default parameters, it also overrides settings stored
+        on disk with default defined in class.
+
+        After widget is created, QApplication.process_events is called to
+        allow any singleShot timers defined in __init__ to execute.
 
         Parameters
         ----------
@@ -163,6 +168,9 @@ class WidgetTest(GuiTest):
             if input_signal.name == input_name:
                 getattr(widget, input_signal.handler)(value, *args)
                 break
+        else:
+            raise ValueError("'{}' is not an input name for widget {}"
+                             .format(input_name, type(widget).__name__))
         widget.handleNewSignals()
 
     def get_output(self, output_name, widget=None):
@@ -447,6 +455,7 @@ class WidgetLearnerTestMixin:
     def test_parameters_default(self):
         """Check if learner's parameters are set to default (widget's) values
         """
+        self.send_signal("Data", self.data)
         self.widget.apply_button.button.click()
         if hasattr(self.widget.learner, "params"):
             learner_params = self.widget.learner.params
@@ -464,10 +473,11 @@ class WidgetLearnerTestMixin:
             else:
                 return getattr(learner, name)
 
+        self.send_signal("Data", self.data)
+
         for parameter in self.parameters:
             assert isinstance(parameter, BaseParameterMapping)
             for value in parameter.values:
-                self.send_signal("Data", self.data)
                 parameter.set_value(value)
                 self.widget.apply_button.button.click()
                 param = get_value(self.widget.learner, parameter.name)
@@ -561,3 +571,55 @@ class WidgetOutputsTestMixin:
         selected_vars = selected.domain.variables + selected.domain.metas
         annotated_vars = annotated.domain.variables + annotated.domain.metas
         self.assertLess(set(selected_vars), set(annotated_vars))
+
+
+class datasets:
+    @staticmethod
+    def path(filename):
+        dirname = os.path.join(os.path.dirname(__file__), "datasets")
+        return os.path.join(dirname, filename)
+
+    @classmethod
+    def missing_data_1(cls):
+        """
+        Data set with 3 continuous features (X{1,2,3}) where all the columns
+        and rows contain at least one NaN value.
+
+        One discrete class D with NaN values
+        Mixed continuous/discrete/string metas ({X,D,S}M)
+
+        Returns
+        -------
+        data : Orange.data.Table
+        """
+        return Table(cls.path("missing_data_1.tab"))
+
+    @classmethod
+    def missing_data_2(cls):
+        """
+        Data set with 3 continuous features (X{1,2,3}) where all the columns
+        and rows contain at least one NaN value and X1, X2 are constant.
+
+        One discrete constant class D with NaN values.
+        Mixed continuous/discrete/string class metas ({X,D,S}M)
+
+        Returns
+        -------
+        data : Orange.data.Table
+        """
+        return Table(cls.path("missing_data_2.tab"))
+
+    @classmethod
+    def missing_data_3(cls):
+        """
+        Data set with 3 discrete features D{1,2,3} where all the columns and
+        rows contain at least one NaN value
+
+        One discrete class D with NaN values
+        Mixes continuous/discrete/string metas ({X,D,S}M)
+
+        Returns
+        -------
+        data : Orange.data.Table
+        """
+        return Table(cls.path("missing_data_3.tab"))
