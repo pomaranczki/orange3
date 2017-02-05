@@ -72,12 +72,10 @@ class TableView(QTableView):
 
     class BoldFontDelegate(QStyledItemDelegate):
         """Paints the text of associated cells in bold font.
-
         Can be used e.g. with QTableView.setItemDelegateForColumn() to make
         certain table columns bold, or if callback is provided, the item's
         model index is passed to it, and the item is made bold only if the
         callback returns true.
-
         Parameters
         ----------
         parent: QObject
@@ -114,16 +112,13 @@ class OWComponent:
     """
     Mixin for classes that contain settings and/or attributes that trigger
     callbacks when changed.
-
     The class initializes the settings handler, provides `__setattr__` that
     triggers callbacks, and provides `control` attribute for access to
     Qt widgets controling particular attributes.
-
     Callbacks are exploited by controls (e.g. check boxes, line edits,
     combo boxes...) that are synchronized with attribute values. Changing
     the value of the attribute triggers a call to a function that updates
     the Qt widget accordingly.
-
     The class is mixed into `widget.OWWidget`, and must also be mixed into
     all widgets not derived from `widget.OWWidget` that contain settings or
     Qt widgets inserted by function in `Orange.widgets.gui` module. See
@@ -139,13 +134,11 @@ class OWComponent:
         """
         Add `func` to the list of functions called when the value of the
         attribute `name` is set.
-
         If the name includes a dot, it is assumed that the part the before the
         first dot is a name of an attribute containing an instance of a
         component, and the call is transferred to its `conntect_control`. For
         instance, `calling `obj.connect_control("graph.attr_x", f)` is
         equivalent to `obj.graph.connect_control("attr_x", f)`.
-
         Args:
             name (str): attribute name
             func (callable): callback function
@@ -159,11 +152,9 @@ class OWComponent:
 
     def __setattr__(self, name, value):
         """Set the attribute value and trigger any attached callbacks.
-
         For backward compatibility, the name can include dots, e.g.
         `graph.attr_x`. `obj.__setattr__('x.y', v)` is equivalent to
         `obj.x.__setattr__('x', v)`.
-
         Args:
             name (str): attribute name
             value (object): value to set to the member.
@@ -186,7 +177,6 @@ def miscellanea(control, box, parent,
     """
     Helper function that sets various properties of the widget using a common
     set of arguments.
-
     The function
     - sets the `control`'s attribute `box`, if `box` is given and `control.box`
     is not yet set,
@@ -199,15 +189,12 @@ def miscellanea(control, box, parent,
     - sets the size policy for the box or the control, if the policy is given,
     - adds space in the `parent`'s layout after the `box` if `addSpace` is set
     and `addToLayout` is not `False`.
-
     If `box` is the same as `parent` it is set to `None`; this is convenient
     because of the way complex controls are inserted.
-
     Unused keyword arguments are assumed to be properties; with this `gui`
     function mimic the behaviour of PyQt's constructors. For instance, if
     `gui.lineEdit` is called with keyword argument `sizePolicy=some_policy`,
     `miscallenea` will call `control.setSizePolicy(some_policy)`.
-
     :param control: the control, e.g. a `QCheckBox`
     :type control: QWidget
     :param box: the box into which the widget was inserted
@@ -271,10 +258,8 @@ def _is_horizontal(orientation):
 def setLayout(widget, layout):
     """
     Set the layout of the widget.
-
     If `layout` is given as `Qt.Vertical` or `Qt.Horizontal`, the function
     sets the layout to :obj:`~QVBoxLayout` or :obj:`~QVBoxLayout`.
-
     :param widget: the widget for which the layout is being set
     :type widget: QWidget
     :param layout: layout
@@ -292,7 +277,6 @@ def _addSpace(widget, space):
     """
     A helper function that adds space into the widget, if requested.
     The function is called by functions that have the `addSpace` argument.
-
     :param widget: Widget into which to insert the space
     :type widget: QWidget
     :param space: Amount of space to insert. If False, the function does
@@ -310,7 +294,6 @@ def _addSpace(widget, space):
 def separator(widget, width=4, height=4):
     """
     Add a separator of the given size into the widget.
-
     :param widget: the widget into whose layout the separator is added
     :type widget: QWidget
     :param width: width of the separator
@@ -339,10 +322,8 @@ def widgetBox(widget, box=None, orientation=Qt.Vertical, margin=None, spacing=4,
     """
     Construct a box with vertical or horizontal layout, and optionally,
     a border with an optional label.
-
     If the widget has a frame, the space after the widget is added unless
     explicitly disabled.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param box: tells whether the widget has a border, and its label
@@ -389,13 +370,9 @@ def vBox(*args, **kwargs):
 def indentedBox(widget, sep=20, orientation=Qt.Vertical, **misc):
     """
     Creates an indented box. The function can also be used "on the fly"::
-
         gui.checkBox(gui.indentedBox(box), self, "spam", "Enable spam")
-
     To align the control with a check box, use :obj:`checkButtonOffsetHint`::
-
         gui.hSlider(gui.indentedBox(self.interBox), self, "intervals")
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget
     :param sep: Indent size (default: 20)
@@ -417,7 +394,6 @@ def indentedBox(widget, sep=20, orientation=Qt.Vertical, **misc):
 def widgetLabel(widget, label="", labelWidth=None, **misc):
     """
     Construct a simple, constant label.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param label: The text of the label (default: None)
@@ -439,14 +415,12 @@ def label(widget, master, label, labelWidth=None, box=None,
     """
     Construct a label that contains references to the master widget's
     attributes; when their values change, the label is updated.
-
     Argument :obj:`label` is a format string following Python's syntax
     (see the corresponding Python documentation): the label's content is
     rendered as `label % master.__dict__`. For instance, if the
     :obj:`label` is given as "There are %(mm)i monkeys", the value of
     `master.mm` (which must be an integer) will be inserted in place of
     `%(mm)i`.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -482,7 +456,6 @@ class SpinBoxWFocusOut(QtWidgets.QSpinBox):
     A class derived from QSpinBox, which postpones the synchronization
     of the control's value with the master's attribute until the control looses
     focus or user presses Tab when the value has changed.
-
     The class overloads :obj:`onChange` event handler to show the commit button,
     and :obj:`onEnter` to commit the change when enter is pressed.
     """
@@ -502,23 +475,15 @@ class SpinBoxWFocusOut(QtWidgets.QSpinBox):
         super().__init__(parent)
         self.setRange(minv, maxv)
         self.setSingleStep(step)
-        self.changed = False
-
-    def onValueChanged(self):
-        """
-        Sets the flag to determine whether the value has been changed.
-        """
-        self.changed = True
 
     def onEnter(self):
         """
         Commits the change by calling the appropriate callbacks.
         """
-        if self.cback and self.changed:
+        if self.cback:
             self.cback(int(str(self.text())))
-        if self.cfunc and self.changed:
+        if self.cfunc:
             self.cfunc()
-        self.changed = False
 
 
 class DoubleSpinBoxWFocusOut(QtWidgets.QDoubleSpinBox):
@@ -530,20 +495,12 @@ class DoubleSpinBoxWFocusOut(QtWidgets.QDoubleSpinBox):
         self.setDecimals(math.ceil(-math.log10(step)))
         self.setRange(minv, maxv)
         self.setSingleStep(step)
-        self.changed = False
-
-    def onValueChanged(self):
-        """
-        Sets the flag to determine whether the value has been changed.
-        """
-        self.changed = True
 
     def onEnter(self):
-        if self.cback and self.changed:
+        if self.cback:
             self.cback(float(str(self.text()).replace(",", ".")))
-        if self.cfunc and self.changed:
+        if self.cfunc:
             self.cfunc()
-        self.changed = False
 
 
 def spin(widget, master, value, minv, maxv, step=1, box=None, label=None,
@@ -556,7 +513,6 @@ def spin(widget, master, value, minv, maxv, step=1, box=None, label=None,
     A spinbox with lots of bells and whistles, such as a checkbox and various
     callbacks. It constructs a control of type :obj:`SpinBoxWFocusOut` or
     :obj:`DoubleSpinBoxWFocusOut`.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -666,7 +622,6 @@ def spin(widget, master, value, minv, maxv, step=1, box=None, label=None,
         cbox.disables = [sbox]
         cbox.makeConsistent()
     if callback and callbackOnReturn:
-        sbox.valueChanged.connect(sbox.onValueChanged)
         sbox.editingFinished.connect(sbox.onEnter)
         if hasattr(sbox, "upButton"):
             sbox.upButton().clicked.connect(
@@ -710,7 +665,6 @@ def checkBox(widget, master, value, label, box=None,
              disables=None, **misc):
     """
     A simple checkbox.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -769,15 +723,10 @@ class LineEditWFocusOut(QtWidgets.QLineEdit):
     A class derived from QLineEdit, which postpones the synchronization
     of the control's value with the master's attribute until the user leaves
     the line edit or presses Tab when the value is changed.
-
     The class also allows specifying a callback function for focus-in event.
-
     .. attribute:: callback
-
         Callback that is called when the change is confirmed
-
     .. attribute:: focusInCallback
-
         Callback that is called on the focus-in event
     """
 
@@ -825,7 +774,6 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
              callbackOnType=False, focusInCallback=None, **misc):
     """
     Insert a line edit.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -892,13 +840,81 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
     miscellanea(ledit, b, widget, **misc)
     return ledit
 
+def lineSearch(widget, master, value, label=None, labelWidth=None,
+             orientation=Qt.Vertical, box=None, callback=None,
+             valueType=str, controlWidth=None,
+             callbackOnType=False, focusInCallback=None, **misc):
+    """
+    Insert a line edit.
+    :param widget: the widget into which the box is inserted
+    :type widget: QWidget or None
+    :param master: master widget
+    :type master: OWWidget or OWComponent
+    :param value: the master's attribute with which the value is synchronized
+    :type value:  str
+    :param label: label
+    :type label: str
+    :param labelWidth: the width of the label
+    :type labelWidth: int
+    :param orientation: tells whether to put the label above or to the left
+    :type orientation: `Qt.Vertical` (default) or `Qt.Horizontal`
+    :param box: tells whether the widget has a border, and its label
+    :type box: int or str or None
+    :param callback: a function that is called when the check box state is
+        changed
+    :type callback: function
+    :param valueType: the type into which the entered string is converted
+        when synchronizing to `value`
+    :type valueType: type
+    :param validator: the validator for the input
+    :type validator: QValidator
+    :param controlWidth: the width of the line edit
+    :type controlWidth: int
+    :param callbackOnType: if set to `True`, the callback is called at each
+        key press (default: `False`)
+    :type callbackOnType: bool
+    :param focusInCallback: a function that is called when the line edit
+        receives focus
+    :type focusInCallback: function
+    :rtype: QLineEdit or a box
+    """
+    if box or label:
+        b = widgetBox(widget, box, orientation, addToLayout=False)
+        if label is not None:
+            widgetLabel(b, label, labelWidth)
+    else:
+        b = widget
+
+    baseClass = misc.pop("baseClass", None)
+    if baseClass:
+        ledit = baseClass(b)
+        if b is not widget:
+            b.layout().addWidget(ledit)
+    elif focusInCallback or callback and not callbackOnType:
+        ledit = LineEditWFocusOut(b, callback, focusInCallback)
+    else:
+        ledit = QtWidgets.QLineEdit(b)
+        if b is not widget:
+            b.layout().addWidget(ledit)
+
+    if value:
+        ledit.setText(str(getdeepattr(master, value)))
+    if controlWidth:
+        ledit.setFixedWidth(controlWidth)
+    if value:
+        ledit.cback = connectControl(
+            master, value,
+            callbackOnType and callback, ledit.textChanged[str],
+            CallFrontLineEdit(ledit), fvcb=value and valueType)[1]
+    miscellanea(ledit, b, widget, **misc)
+    return ledit
+
 
 def button(widget, master, label, callback=None, width=None, height=None,
            toggleButton=False, value="", default=False, autoDefault=True,
            buttonType=QtWidgets.QPushButton, **misc):
     """
     Insert a button (QPushButton, by default)
-
     :param widget: the widget into which the button is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -962,7 +978,6 @@ def toolButton(widget, master, label="", callback=None,
                width=None, height=None, tooltip=None):
     """
     Insert a tool button. Calls :obj:`button`
-
     :param widget: the widget into which the button is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -984,7 +999,6 @@ def toolButton(widget, master, label="", callback=None,
 def createAttributePixmap(char, background=Qt.black, color=Qt.white):
     """
     Create a QIcon with a given character. The icon is 13 pixels high and wide.
-
     :param char: The character that is printed in the icon
     :type char: str
     :param background: the background color (default: black)
@@ -1041,7 +1055,6 @@ def attributeItem(var):
     """
     Construct a pair (icon, name) for inserting a variable into a combo or
     list box
-
     :param var: variable
     :type var: Orange.data.Variable
     :rtype: tuple with QIcon and str
@@ -1084,10 +1097,8 @@ def listBox(widget, master, value=None, labels=None, box=None, callback=None,
             dataValidityCallback=None, sizeHint=None, **misc):
     """
     Insert a list box.
-
     The value with which the box's value synchronizes (`master.<value>`)
     is a list of indices of selected items.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -1152,7 +1163,6 @@ def radioButtons(widget, master, value, btnLabels=(), tooltips=None,
     Construct a button group and add radio buttons, if they are given.
     The value with which the buttons synchronize is the index of selected
     button.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -1202,12 +1212,10 @@ def appendRadioButton(group, label, insertInto=None,
     Construct a radio button and add it to the group. The group must be
     constructed with :obj:`radioButtons` since it adds additional
     attributes need for the call backs.
-
     The radio button is inserted into `insertInto` or, if omitted, into the
     button group. This is useful for more complex groups, like those that have
     radio buttons in several groups, divided by labels and inside indented
     boxes.
-
     :param group: the button group
     :type group: QButtonGroup
     :param label: string label or a pixmap for the button
@@ -1253,7 +1261,6 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1,
             intOnly=True, **misc):
     """
     Construct a slider.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -1266,7 +1273,6 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1,
     :type label: str
     :param callback: a function that is called when the value is changed
     :type callback: function
-
     :param minValue: minimal value
     :type minValue: int or float
     :param maxValue: maximal value
@@ -1340,7 +1346,6 @@ def labeledSlider(widget, master, value, box=None,
                   callback=None, vertical=False, width=None, **misc):
     """
     Construct a slider with labels instead of numbers.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -1355,7 +1360,6 @@ def labeledSlider(widget, master, value, box=None,
     :type labels: tuple of str
     :param callback: a function that is called when the value is changed
     :type callback: function
-
     :param ticks: if set to `True`, ticks are added below the slider
     :type ticks: bool
     :param vertical: if set to `True`, the slider is vertical
@@ -1411,7 +1415,6 @@ def valueSlider(widget, master, value, box=None, label=None,
                 callback=None, vertical=False, width=None, **misc):
     """
     Construct a slider with different values.
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -1428,7 +1431,6 @@ def valueSlider(widget, master, value, box=None, label=None,
     :type labelFormat: str or func
     :param callback: a function that is called when the value is changed
     :type callback: function
-
     :param ticks: if set to `True`, ticks are added below the slider
     :type ticks: bool
     :param vertical: if set to `True`, the slider is vertical
@@ -1490,15 +1492,12 @@ class OrangeComboBox(QtWidgets.QComboBox):
     def setMaximumContentsLength(self, length):
         """
         Set the maximum contents length hint.
-
         The hint specifies the upper bound on the `sizeHint` and
         `minimumSizeHint` width specified in character length.
         Set to 0 or negative value to disable.
-
         .. note::
              This property does not affect the widget's `maximumSize`.
              The widget can still grow depending in it's sizePolicy.
-
         Parameters
         ----------
         lenght : int
@@ -1544,11 +1543,9 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None,
              **misc):
     """
     Construct a combo box.
-
     The `value` attribute of the `master` contains either the index of the
     selected row (if `sendSelected` is left at default, `False`) or a value
     converted to `valueType` (`str` by default).
-
     :param widget: the widget into which the box is inserted
     :type widget: QWidget or None
     :param master: master widget
@@ -1581,7 +1578,6 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None,
     :type editable: bool
     :param int contentsLength: Contents character length to use as a
         fixed size hint. When not None, equivalent to::
-
             combo.setSizeAdjustPolicy(
                 QComboBox.AdjustToMinimumContentsLengthWithIcon)
             combo.setMinimumContentsLength(contentsLength)
@@ -1659,36 +1655,22 @@ class OrangeListBox(QtWidgets.QListWidget):
     """
     List box with drag and drop functionality. Function :obj:`listBox`
     constructs instances of this class; do not use the class directly.
-
     .. attribute:: master
-
         The widget into which the listbox is inserted.
-
     .. attribute:: ogLabels
-
         The name of the master's attribute that holds the strings with items
         in the list box.
-
     .. attribute:: ogValue
-
         The name of the master's attribute that holds the indices of selected
         items.
-
     .. attribute:: enableDragDrop
-
         A flag telling whether drag-and-drop is enabled.
-
     .. attribute:: dragDropCallback
-
         A callback that is called at the end of drop event.
-
     .. attribute:: dataValidityCallback
-
         A callback that is called on dragEnter and dragMove events and returns
         either `ev.accept()` or `ev.ignore()`.
-
     .. attribute:: defaultSizeHint
-
         The size returned by the `sizeHint` method.
     """
     def __init__(self, master, enableDragDrop=False, dragDropCallback=None,
@@ -1936,21 +1918,16 @@ def auto_commit(widget, master, value, label, auto_label=None, box=True,
                 callback=None, **misc):
     """
     Add a commit button with auto-commit check box.
-
     The widget must have a commit method and a setting that stores whether
     auto-commit is on.
-
     The function replaces the commit method with a new commit method that
     checks whether auto-commit is on. If it is, it passes the call to the
     original commit, otherwise it sets the dirty flag.
-
     The checkbox controls the auto-commit. When auto-commit is switched on, the
     checkbox callback checks whether the dirty flag is on and calls the original
     commit.
-
     Important! Do not connect any signals to the commit before calling
     auto_commit.
-
     :param widget: the widget into which the box with the button is inserted
     :type widget: QWidget or None
     :param value: the master's attribute which stores whether the auto-commit
@@ -2255,6 +2232,7 @@ class FunctionCallback:
                     func(**kwds)
             else:
                 self.func(**kwds)
+
 
 
 class CallBackListView(ControlledCallback):
@@ -3185,7 +3163,6 @@ def toolButtonSizeHint(button=None, style=None):
 class FloatSlider(QSlider):
     """
     Slider for continuous values.
-
     The slider is derived from `QtGui.QSlider`, but maps from its discrete
     numbers to the desired continuous interval.
     """
@@ -3213,7 +3190,6 @@ class FloatSlider(QSlider):
     def setValue(self, value):
         """
         Set current value. The value is divided by `step`
-
         Args:
             value: new value
         """
@@ -3222,7 +3198,6 @@ class FloatSlider(QSlider):
     def setScale(self, minValue, maxValue, step=0):
         """
         Set slider's ranges (compatibility with qwtSlider).
-
         Args:
             minValue (float): minimal value
             maxValue (float): maximal value
@@ -3247,7 +3222,6 @@ class FloatSlider(QSlider):
     def setRange(self, minValue, maxValue, step=1.0):
         """
         Set slider's ranges (compatibility with qwtSlider).
-
         Args:
             minValue (float): minimal value
             maxValue (float): maximal value
@@ -3262,7 +3236,6 @@ class ControlGetter:
     """
     Provide access to GUI elements based on their corresponding attributes
     in widget.
-
     Every widget has an attribute `controls` that is an instance of this
     class, which uses the `controlled_attributes` dictionary to retrieve the
     control (e.g. `QCheckBox`, `QComboBox`...) corresponding to the attribute.
